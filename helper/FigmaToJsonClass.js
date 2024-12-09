@@ -3,6 +3,7 @@ const { EventEmitter } = require("stream");
 const { transform } = require('./extract');
 const { saveAsJson } = require('./saveToFile');
 const { exec } = require('child_process');
+const { createCssClasses } = require("./createCssClass");
 
 class FigmaToJsonClass extends EventEmitter {
 
@@ -92,6 +93,16 @@ class FigmaToJsonClass extends EventEmitter {
         });        
     }
 
+    createCssClassMethod() {
+        createCssClasses()
+        .then(()=> {
+            this.emit("File Generation Done")
+        })
+        .catch(()=> {
+            this.emit("File Generation failed")
+        })
+    }
+
     initializeFlow() {
         this.on('transformCompleted', (...args) => {
             this.saveStyleDictionary(args, this.pathToSaveJson)
@@ -107,6 +118,15 @@ class FigmaToJsonClass extends EventEmitter {
         
         this.on('build done', ()=> {
             console.log('--> Build Completed')
+            this.createCssClassMethod()
+        })
+
+        this.on('File Generation failed', ()=> {
+            console.log("--> Classes Build Failed")
+        })
+
+        this.on('File Generation Done', ()=> {
+            console.log("--> Classes Build Done")
             if(this.cb) {
                 this.cb();
             }
