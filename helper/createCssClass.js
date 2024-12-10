@@ -4,6 +4,7 @@ const categoryMapping = {
   rounded: "border-radius",
   color: "color",
   bg: "background-color",
+  "br-color": 'border-color',
   margin: "margin",
   "margin-top": "margin-top",
   "margin-bottom": "margin-bottom",
@@ -30,9 +31,10 @@ const categoryMapping = {
 
 const varArr = {
   "border-radius-rounded": "rounded",
-  colors: ["color", "bg"],
+  colors: ["color", "bg", 'br-color'],
   color: "color",
   bg: "bg",
+  "br-color": 'br-color',
   container: "container",
   spacing: [
     "margin",
