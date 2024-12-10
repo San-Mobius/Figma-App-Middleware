@@ -57,6 +57,44 @@ const varArr = {
     'shadow-focus-rings-ring': 'shadow-focus'
   }
 
+  function generateTypographyClasses(variables) {
+    const cssClasses = [];
+    
+    for (const [key, value] of Object.entries(variables)) {
+      // Extract parts of the variable name
+      const match = key.match(/--typography-(text-\w+)-(font-\w+)-(.+)/);
+      if (match) {
+        const [_, textSize, fontWeight, property] = match;
+  
+        // Generate the class name
+        const className = `${textSize}-${fontWeight}`;
+  
+        // Check if the class already exists
+        let classDefinition = cssClasses.find(cls => cls.name === className);
+        if (!classDefinition) {
+          classDefinition = {
+            name: className,
+            properties: {}
+          };
+          cssClasses.push(classDefinition);
+        }
+  
+        // Add the property to the class
+        const cssProperty = property.replace(/-/g, "-");
+        classDefinition.properties[cssProperty] = value;
+      }
+    }
+  
+    // Generate the final CSS string
+    return cssClasses.map(cls => {
+      const properties = Object.entries(cls.properties)
+        .map(([prop, value]) => `  ${prop == 'text-case' ? 'text-transform' : prop}: ${prop == 'font-family' ? `"${value.split(';')[0].trim()}";` : value}`)
+        .join("\n");
+      return `.${cls.name} {\n${properties}\n}`;
+    }).join("\n\n");
+  }
+  
+
 function createCssClasses(variablesFile = "build/css/_variables.css", outputFile = "build/css/utility.css") {
   return new Promise((res, rej) => {
     try {
@@ -73,26 +111,33 @@ function createCssClasses(variablesFile = "build/css/_variables.css", outputFile
         const variableRegex = /--([\w-]+):\s*(.+?);/g;
         const variables = [];
         let match;
+
+        let typographyVariables = {};
         // let data = [];
         while ((match = variableRegex.exec(data)) !== null) {
-          Object.keys(varArr).forEach((key)=> {
-            if(match[1].includes(key)) {
-              let className;
-              if(Array.isArray(varArr[key])) {
-                varArr[key].map((item,index) => {
-                  className = String(match[1]).replace(key, varArr[key][index]);
-                  variables.push({ "className": className, "variableName": match[1], "key": varArr[key][index] });
-                })
-              } else {
-                className = String(match[1]).replace(key, varArr[key]);
-                variables.push({ "className": className, "variableName": match[1], "key": key });
+          if(match[0].includes('--typography-text')) {
+            let s = match[0].split(':')
+            typographyVariables[s[0]] = s[1];
+          } else {
+            Object.keys(varArr).forEach((key)=> {
+              if(match[1].includes(key)) {
+                let className;
+                if(Array.isArray(varArr[key])) {
+                  varArr[key].map((item,index) => {
+                    className = String(match[1]).replace(key, varArr[key][index]);
+                    variables.push({ "className": className, "variableName": match[1], "key": varArr[key][index] });
+                  })
+                } else {
+                  className = String(match[1]).replace(key, varArr[key]);
+                  variables.push({ "className": className, "variableName": match[1], "key": key });
+                }
               }
-            }
-          })
+            })
+          }
         }
 
         // Generate utility classes
-        const classes = variables
+        let classes = variables
           .map((v) => {
             if(Array.isArray(varArr[v.key])) {
               let classObj = '';
@@ -117,6 +162,7 @@ function createCssClasses(variablesFile = "build/css/_variables.css", outputFile
           .filter(Boolean) // Remove empty strings for unknown categories
           .join("\n");
 
+          classes += generateTypographyClasses(typographyVariables)
         // Write the generated classes to utilities.css
         fs.writeFile(outputFile, classes, (writeErr) => {
           if (writeErr) {
