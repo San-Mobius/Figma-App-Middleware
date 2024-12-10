@@ -3,6 +3,19 @@ const fs = require("fs");
 const categoryMapping = {
   "rounded": "border-radius",
   "color": "color",
+  "bg": "background-color",
+  'margin': 'margin',
+  'margin-top': 'margin-top',
+  'margin-bottom': 'margin-bottom',
+  'margin-left': 'margin-left',
+  'margin-right': 'margin-right',
+  'padding': 'padding',
+  'padding-top': 'padding-top',
+  'padding-bottom': 'padding-bottom',
+  'padding-left': 'padding-left',
+  'padding-right': 'padding-right',
+  'width': 'width',
+  'height': 'height',
   'container': 'width',
   'spacing': 'margin-inline',
   'width-max': 'max-width',
@@ -17,9 +30,23 @@ const categoryMapping = {
 
 const varArr = {
     'border-radius-rounded' : 'rounded',
-    'colors' : 'color',
+    'colors' : ['color', 'bg'],
+    'color': 'color',
+    'bg': 'bg',
     'container': 'container',
-    'spacing': 'spacing',
+    'spacing': ['margin', 'margin-top', 'margin-bottom', 'margin-left', 'margin-right', 'padding', 'padding-top', 'padding-bottom', 'padding-left', 'padding-right', 'width', 'height'],
+    'margin': 'margin',
+    'margin-top': 'margin-top',
+    'margin-bottom': 'margin-bottom',
+    'margin-left': 'margin-left',
+    'margin-right': 'margin-right',
+    'padding': 'padding',
+    'padding-top': 'padding-top',
+    'padding-bottom': 'padding-bottom',
+    'padding-left': 'padding-left',
+    'padding-right': 'padding-right',
+    'width': 'width',
+    'height': 'height',
     'width-max-w': 'width-max',
     'font-text': 'text',
     'font-uppercase-text': 'text-uppercase',
@@ -50,8 +77,16 @@ function createCssClasses(variablesFile = "build/css/_variables.css", outputFile
         while ((match = variableRegex.exec(data)) !== null) {
           Object.keys(varArr).forEach((key)=> {
             if(match[1].includes(key)) {
-              let className = String(match[1]).replace(key, varArr[key]);
-              variables.push({ className: className, variableName: match[1], key: key });
+              let className;
+              if(Array.isArray(varArr[key])) {
+                varArr[key].map((item,index) => {
+                  className = String(match[1]).replace(key, varArr[key][index]);
+                  variables.push({ "className": className, "variableName": match[1], "key": varArr[key][index] });
+                })
+              } else {
+                className = String(match[1]).replace(key, varArr[key]);
+                variables.push({ "className": className, "variableName": match[1], "key": key });
+              }
             }
           })
         }
@@ -59,7 +94,18 @@ function createCssClasses(variablesFile = "build/css/_variables.css", outputFile
         // Generate utility classes
         const classes = variables
           .map((v) => {
-            if(categoryMapping[varArr[v.key]]) {
+            if(Array.isArray(varArr[v.key])) {
+              let classObj = '';
+              varArr[v.key].map((item,i)=> {
+                classObj = `
+.${v.className} {
+  ${categoryMapping[varArr[v.key][i]]}: var(--${v.variableName});
+}
+                `
+              })
+              return classObj;
+            }
+            else if(categoryMapping[varArr[v.key]]) {
               return `
 .${v.className} {
   ${categoryMapping[varArr[v.key]]}: var(--${v.variableName});
